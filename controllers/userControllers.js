@@ -1,4 +1,5 @@
 const asyncHnadler = require("express-async-handler");
+const { default: mongoose } = require("mongoose");
 const userModel = require("../model/userModel.js");
 
 const getUsers = asyncHnadler(async (req, res) => {
@@ -34,34 +35,36 @@ const deleteUser = asyncHnadler(async (req, res) => {
   });
 });
 
-const updateUser = asyncHnadler(async (req, res) => {
-  //find by id
-  userModel.findById(req.params.id, (err, user) => {
-    if (err) {
-      res.send(err);
-    } else {
-      //updating user details
-      user.name = req.body.name;
-      user.lastname = req.body.lastname;
-      user.number = req.body.phoneNumber;
-      user.age = req.body.age;
+//GETTING USER BY ID
 
-      //saving updates in db
-
-      user.save((err) => {
-        if (err) {
-          res.send(err);
-        } else {
-          res.json(`user ${req.params.id} updated`);
-        }
-      });
-    }
-  });
+const userById = asyncHnadler(async (req, res) => {
+  const id = req.params.id;
+  const user = await userModel.findById(id);
+  if (!user) {
+    return res.send("user not found");
+  }
+  res.json(user);
 });
+
+//UPDATING DATA
+
+const updateUser = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ error: "No such id." });
+  }
+
+  const user = await userModel.findByIdAndUpdate(id, { ...req.body });
+  if (!user) {
+    res.json({ error: "No such user." });
+  }
+  res.status(200).json({ message: "User succsefully updated" });
+};
 
 module.exports = {
   getUsers,
   postUser,
   deleteUser,
   updateUser,
+  userById,
 };
